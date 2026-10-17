@@ -1,0 +1,46 @@
+name: Raporty biegowe
+
+on:
+  schedule:
+    # Codziennie o 18:00 UTC (20:00 latem / 19:00 zimą w Polsce): biegi z ostatnich 24 h
+    - cron: "0 18 * * *"
+    # W niedzielę o 17:00 UTC: podsumowanie tygodnia
+    - cron: "0 17 * * 0"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Rodzaj raportu"
+        type: choice
+        options: [daily, weekly]
+        default: weekly
+      code:
+        description: "Tylko do konfiguracji: kod ze Stravy (inaczej zostaw puste)"
+        required: false
+        default: ""
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Uruchom
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_CODE: ${{ github.event.inputs.code }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          if [ -n "$INPUT_CODE" ]; then
+            python strava_telegram.py --exchange-code "$INPUT_CODE"
+            exit 0
+          fi
+          MODE="${INPUT_MODE:-daily}"
+          if [ "$SCHEDULE" = "0 17 * * 0" ]; then MODE=weekly; fi
+          python strava_telegram.py --mode "$MODE"
