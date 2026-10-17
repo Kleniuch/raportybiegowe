@@ -14,7 +14,7 @@ on:
         options: [daily, weekly]
         default: weekly
       code:
-        description: d5321110ab1f6866c78c5a8aa40c76fbc3e6bd87
+        description: d52841a80a1e1352802d90bbd2210d13cc0e7223
         required: false
         default: ""
 
