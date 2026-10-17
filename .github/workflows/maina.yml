@@ -14,7 +14,7 @@ on:
         options: [daily, weekly]
         default: weekly
       code:
-        description: "Tylko do konfiguracji: kod ze Stravy (inaczej zostaw puste)"
+        description: d5321110ab1f6866c78c5a8aa40c76fbc3e6bd87
         required: false
         default: ""
 
