@@ -1,0 +1,50 @@
+name: Raporty biegowe
+
+on:
+  schedule:
+    - cron: "0 18 * * *"
+    - cron: "0 17 * * 0"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Rodzaj raportu (coach = trener AI, ostatni bieg bez względu na datę)"
+        type: choice
+        options: [coach, daily, weekly]
+        default: coach
+      code:
+        description: "Tylko do konfiguracji: kod ze Stravy (inaczej zostaw puste)"
+        required: false
+        default: ""
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Uruchom
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          INPUT_MODE: ${{ github.event.inputs.mode }}
+          INPUT_CODE: ${{ github.event.inputs.code }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          if [ -n "$INPUT_CODE" ]; then
+            python strava_telegram.py --exchange-code "$INPUT_CODE"
+            exit 0
+          fi
+          if [ -n "$SCHEDULE" ]; then
+            HOURS=24
+            if [ "$SCHEDULE" = "0 17 * * 0" ]; then MODE=weekly; else MODE=coach; fi
+          else
+            MODE="${INPUT_MODE:-coach}"
+            if [ "$MODE" = "coach" ]; then HOURS=0; else HOURS=24; fi
+          fi
+          python strava_telegram.py --mode "$MODE" --hours "$HOURS"
